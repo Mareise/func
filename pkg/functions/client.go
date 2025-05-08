@@ -586,6 +586,7 @@ func (c *Client) Init(cfg Function) (Function, error) {
 
 	// Create a new function (in memory)
 	f := NewFunctionWith(cfg)
+	fmt.Printf("Function details: %+v\n", f)
 
 	// Create a .func diretory which is also added to a .gitignore
 	if err = ensureRunDataDir(f.Root); err != nil {

@@ -106,6 +106,8 @@ type Function struct {
 	Deploy DeploySpec `yaml:"deploy,omitempty"`
 
 	Local Local `yaml:"-"`
+
+	Hallo string `yaml:"hallo"`
 }
 
 // KnativeSubscription
@@ -258,6 +260,7 @@ func NewFunction(root string) (f Function, err error) {
 		}
 	}
 	f.Root = root // path is not persisted, as this is the purview of the FS
+	fmt.Printf("NewFunction: %+v\n", f)
 
 	// Path must exist and be a directory
 	fd, err := os.Stat(root)

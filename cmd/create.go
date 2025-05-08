@@ -131,12 +131,16 @@ func runCreate(cmd *cobra.Command, args []string, newClient ClientFactory) (err 
 		return
 	}
 
+	fmt.Printf("Config: %+v\n", cfg)
+
+	// Here we can set the things that will be set in the yml
 	// Create
 	_, err = client.Init(fn.Function{
 		Name:     cfg.Name,
 		Root:     cfg.Path,
 		Runtime:  cfg.Runtime,
 		Template: cfg.Template,
+		Hallo:    "world",
 	})
 	if err != nil {
 		return err
