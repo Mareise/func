@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -274,12 +276,9 @@ func runDeploy(cmd *cobra.Command, newClient ClientFactory) (err error) {
 	// Informative non-error messages regarding the final deployment request
 	printDeployMessages(cmd.OutOrStdout(), f)
 
-	files, err := f.PrintPythonFiles()
-	if err != nil {
-		fmt.Printf("Error walking the path: %v\n", err)
-		os.Exit(1)
-	}
-	fmt.Printf("Full map: %+v\n", files)
+	// todo check if the right point
+	// todo do something with the returned values
+	CallPythonFunctionWithExecutable()
 
 	// Get options based on the value of the config such as concrete impls
 	// of builders and pushers based on the value of the --builder flag
@@ -796,4 +795,27 @@ func isDigested(v string) (validDigest bool, err error) {
 	}
 	_, ok := ref.(name.Digest)
 	return ok, nil
+}
+
+func CallPythonFunctionWithExecutable() {
+	path := "../static-analysis/dist/test"
+	// Add .exe extension for windows todo have to check
+	if runtime.GOOS == "windows" {
+		path += ".exe"
+	}
+
+	if _, err := os.Stat(path); err != nil {
+		fmt.Printf("File path error: %v\n", err)
+	} else {
+		fmt.Println("File exists!")
+	}
+
+	cmd := exec.Command(path)
+	output, err := cmd.Output()
+	if err != nil {
+		fmt.Printf("failed to run analyzer: %v\n", err)
+	}
+
+	outputStr := string(output)
+	fmt.Println(outputStr)
 }

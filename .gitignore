@@ -33,3 +33,10 @@ __pycache__
 
 # Operating system temporary files
 .DS_Store
+
+# Static code analysis
+# todo has to be remove for a procuctive version
+/static-analysis/dist
+/static-analysis/build
+/pythontest
+/static-analysis/test.spec

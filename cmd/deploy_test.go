@@ -138,6 +138,7 @@ func testBuilderValidated(cmdFn commandConstructor, t *testing.T) {
 
 // TestDeploy_ConfigApplied ensures that the deploy command applies config
 // settings at each level (static, global, function, envs, flags)
+// good to test
 func TestDeploy_ConfigApplied(t *testing.T) {
 	testConfigApplied(NewDeployCmd, t)
 }

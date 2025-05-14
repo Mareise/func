@@ -262,7 +262,7 @@ func NewFunction(root string) (f Function, err error) {
 		}
 	}
 	f.Root = root // path is not persisted, as this is the purview of the FS
-	fmt.Printf("NewFunction: %+v\n", f)
+	//fmt.Printf("NewFunction: %+v\n", f)
 
 	// Path must exist and be a directory
 	fd, err := os.Stat(root)
@@ -807,36 +807,4 @@ func (f Function) ImageNameWithDigest(newDigest string) string {
 	part2 := string(imageAsBytes[lastSlashIdx+1:])
 	// Remove tag from the image name and append SHA256 hash instead
 	return part1 + strings.Split(part2, ":")[0] + "@" + newDigest
-}
-
-func (f Function) IsPython() bool {
-	return strings.HasPrefix(strings.ToLower(f.Runtime), "python")
-}
-
-func (f Function) PrintPythonFiles() (map[string]string, error) {
-	files := make(map[string]string)
-
-	if !f.IsPython() {
-		return files, nil
-	}
-
-	err := filepath.Walk(f.Root, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() && strings.HasSuffix(info.Name(), ".py") {
-			if !strings.Contains(strings.ToLower(info.Name()), "test") {
-				content, readErr := os.ReadFile(path)
-				if readErr != nil {
-					return readErr
-				}
-				files[path] = string(content)
-			} else {
-				fmt.Printf("Found test file: %s\n", path)
-			}
-		}
-		return nil
-	})
-
-	return files, err
 }
