@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"strconv"
 	"strings"
 
@@ -272,6 +273,13 @@ func runDeploy(cmd *cobra.Command, newClient ClientFactory) (err error) {
 
 	// Informative non-error messages regarding the final deployment request
 	printDeployMessages(cmd.OutOrStdout(), f)
+
+	files, err := f.PrintPythonFiles()
+	if err != nil {
+		fmt.Printf("Error walking the path: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("Full map: %+v\n", files)
 
 	// Get options based on the value of the config such as concrete impls
 	// of builders and pushers based on the value of the --builder flag

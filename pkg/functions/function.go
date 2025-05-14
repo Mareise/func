@@ -178,6 +178,7 @@ type RunSpec struct {
 }
 
 // DeploySpec
+// here i need to set it i think
 type DeploySpec struct {
 	// Namespace into which the function was deployed on supported platforms.
 	Namespace string `yaml:"namespace,omitempty"`
@@ -186,6 +187,7 @@ type DeploySpec struct {
 	Image string `yaml:"image,omitempty"`
 
 	// Map containing user-supplied annotations
+	// todo i think here i could start by setting the flag
 	// Example: { "division": "finance" }
 	Annotations map[string]string `yaml:"annotations,omitempty"`
 
@@ -805,4 +807,36 @@ func (f Function) ImageNameWithDigest(newDigest string) string {
 	part2 := string(imageAsBytes[lastSlashIdx+1:])
 	// Remove tag from the image name and append SHA256 hash instead
 	return part1 + strings.Split(part2, ":")[0] + "@" + newDigest
+}
+
+func (f Function) IsPython() bool {
+	return strings.HasPrefix(strings.ToLower(f.Runtime), "python")
+}
+
+func (f Function) PrintPythonFiles() (map[string]string, error) {
+	files := make(map[string]string)
+
+	if !f.IsPython() {
+		return files, nil
+	}
+
+	err := filepath.Walk(f.Root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() && strings.HasSuffix(info.Name(), ".py") {
+			if !strings.Contains(strings.ToLower(info.Name()), "test") {
+				content, readErr := os.ReadFile(path)
+				if readErr != nil {
+					return readErr
+				}
+				files[path] = string(content)
+			} else {
+				fmt.Printf("Found test file: %s\n", path)
+			}
+		}
+		return nil
+	})
+
+	return files, err
 }

@@ -24,6 +24,7 @@ type ResourcesOptions struct {
 	Limits   *ResourcesLimitsOptions   `yaml:"limits,omitempty"`
 }
 
+// maybe set it here
 type ResourcesLimitsOptions struct {
 	CPU         *string `yaml:"cpu,omitempty" jsonschema:"pattern=^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$"`
 	Memory      *string `yaml:"memory,omitempty" jsonschema:"pattern=^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$"`
