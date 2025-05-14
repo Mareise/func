@@ -39,4 +39,4 @@ __pycache__
 /static-analysis/dist
 /static-analysis/build
 /pythontest
-/static-analysis/test.spec
+/static-analysis/static-analysis.spec
