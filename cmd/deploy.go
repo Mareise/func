@@ -798,7 +798,7 @@ func isDigested(v string) (validDigest bool, err error) {
 }
 
 func CallPythonFunctionWithExecutable() {
-	path := "../static-analysis/dist/static-analysis"
+	path := "../static-analysis/dist/analysis"
 	// Add .exe extension for windows todo have to check
 	if runtime.GOOS == "windows" {
 		path += ".exe"

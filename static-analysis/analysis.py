@@ -1,4 +1,3 @@
-# processor.py
 import os
 
 GPU_KEYWORDS = [
