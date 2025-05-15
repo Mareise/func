@@ -1,12 +1,7 @@
-import re
+import ast
 
-# Define GPU-related patterns
-GPU_IMPORTS = ['torch', 'tensorflow', 'cupy', 'jax']
-GPU_FUNCTIONS = [
-    'torch.cuda', 'cuda()', '.to("cuda")', ".to('cuda')",
-    'model.to("cuda")', 'model.to(\'cuda\')',
-    'cuda.is_available', 'tensorflow.device'
-]
+GPU_IMPORTS = {'torch', 'tensorflow', 'cupy', 'jax'}
+GPU_FUNCTION_KEYWORDS = {'cuda', 'to', 'device', 'is_available'}
 
 def analyze_file(filename):
     result = {
@@ -23,37 +18,65 @@ def analyze_file(filename):
 
     try:
         with open(filename, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
+            source = f.read()
 
-        imports_found = set()
-        cuda_calls = []
-        lines_considered = []
+        tree = ast.parse(source)
+        analyzer = GPUCodeAnalyzer()
+        analyzer.visit(tree)
 
-        for i, line in enumerate(lines, start=1):
-            stripped = line.strip()
-            # Match GPU-related imports
-            for lib in GPU_IMPORTS:
-                if re.match(rf'(from\s+{lib}\b|import\s+{lib}\b)', stripped):
-                    imports_found.add(lib)
+        cuda_calls = analyzer.gpu_calls
+        imports_found = analyzer.imports
+        lines_considered = analyzer.lines_considered
 
-            # Match GPU-related function calls
-            for pattern in GPU_FUNCTIONS:
-                if pattern in line:
-                    cuda_calls.append(pattern)
-                    lines_considered.append(i)
-
-        # If any GPU calls found, build the JSON result
-        if cuda_calls:
+        if cuda_calls or imports_found:
             result["execution_mode"] = "GPU"
-            result["reason"] = f"Found {len(cuda_calls)} GPU-related call(s): " + ", ".join(set(cuda_calls)) + "."
-            result["confidence"] = round(0.8 + 0.02 * len(cuda_calls), 2)
+            result["reason"] = (
+                f"Detected {len(cuda_calls)} GPU-related call(s) and {len(imports_found)} relevant import(s)."
+            )
+            result["confidence"] = round(0.5 + 0.1 * len(cuda_calls) + 0.1 * len(imports_found), 2)
             result["details"]["uses_cuda"] = True
             result["details"]["cuda_calls"] = list(set(cuda_calls))
             result["details"]["lines_considered"] = lines_considered
-        result["details"]["imports"] = list(imports_found)
+            result["details"]["imports"] = list(imports_found)
+        else:
+            result["reason"] = "No GPU-related calls or imports detected."
+            result["confidence"] = 0.1
 
     except Exception as e:
         result["reason"] = f"Failed to analyze {filename}: {e}"
         result["confidence"] = 0.0
 
     return result
+
+class GPUCodeAnalyzer(ast.NodeVisitor):
+    def __init__(self):
+        self.imports = set()
+        self.gpu_calls = []
+        self.lines_considered = []
+
+    def visit_Import(self, node):
+        for alias in node.names:
+            if alias.name in GPU_IMPORTS:
+                self.imports.add(alias.name)
+        self.generic_visit(node)
+
+    def visit_ImportFrom(self, node):
+        if node.module in GPU_IMPORTS:
+            self.imports.add(node.module)
+        self.generic_visit(node)
+
+    def visit_Call(self, node):
+        full_name = get_full_attr_name(node.func)
+        if any(keyword in full_name for keyword in GPU_FUNCTION_KEYWORDS):
+            self.gpu_calls.append(full_name)
+            self.lines_considered.append(node.lineno)
+        self.generic_visit(node)
+
+def get_full_attr_name(node):
+    parts = []
+    while isinstance(node, ast.Attribute):
+        parts.append(node.attr)
+        node = node.value
+    if isinstance(node, ast.Name):
+        parts.append(node.id)
+    return ".".join(reversed(parts)) if parts else ""
