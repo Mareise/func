@@ -1,5 +1,5 @@
 import os
-from analysis import is_gpu_related, analyze_directory_for_gpu_code
+from classifier import is_gpu_related, analyze_directory_for_gpu_code
 from io import StringIO
 import sys
 
@@ -24,6 +24,20 @@ def test_is_gpu_related_on_static_files():
         assert is_gpu_related(f.read()) is False
 
 def test_analyze_directory_for_gpu_code_static(monkeypatch):
+    monkeypatch.chdir(TESTDATA_DIR)
+
+    captured_output = StringIO()
+    sys.stdout = captured_output
+
+    analyze_directory_for_gpu_code()
+
+    sys.stdout = sys.__stdout__
+    output = captured_output.getvalue()
+
+    assert "gpu.py" in output
+    assert "cpu.py" not in output
+
+def test_ast(monkeypatch):
     monkeypatch.chdir(TESTDATA_DIR)
 
     captured_output = StringIO()

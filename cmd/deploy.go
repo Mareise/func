@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -523,6 +524,18 @@ type deployConfig struct {
 	Timestamp bool
 }
 
+type AnalysisResult struct {
+	ExecutionMode string  `json:"execution_mode"`
+	Reason        string  `json:"reason"`
+	Confidence    float64 `json:"confidence"`
+	Details       struct {
+		Imports   []string `json:"imports"`
+		UsesCUDA  bool     `json:"uses_cuda"`
+		CUDACalls []string `json:"cuda_calls"`
+		Lines     []int    `json:"lines_considered"`
+	} `json:"details"`
+}
+
 // newDeployConfig creates a buildConfig populated from command flags and
 // environment variables; in that precedence.
 func newDeployConfig(cmd *cobra.Command) deployConfig {
@@ -798,7 +811,7 @@ func isDigested(v string) (validDigest bool, err error) {
 }
 
 func CallPythonFunctionWithExecutable() {
-	path := "../static-analysis/dist/analysis"
+	path := "../static-analysis/dist/classifier"
 	// Add .exe extension for windows todo have to check
 	if runtime.GOOS == "windows" {
 		path += ".exe"
@@ -816,6 +829,33 @@ func CallPythonFunctionWithExecutable() {
 		fmt.Printf("failed to run analyzer: %v\n", err)
 	}
 
-	outputStr := string(output)
-	fmt.Println(outputStr)
+	var result map[string]AnalysisResult
+	err = json.Unmarshal(output, &result)
+	if err != nil {
+		fmt.Printf("Failed to decode result: %v\n", err)
+		return
+	}
+
+	printAnalysisResult(result)
+}
+
+func printAnalysisResult(result map[string]AnalysisResult) {
+	if len(result) == 0 {
+		fmt.Println("No analysis results found")
+		return
+	}
+
+	for file, analysis := range result {
+		fmt.Printf("\nAnalysis Result for %s:\n", file)
+		fmt.Printf("  Execution Mode: %s\n", analysis.ExecutionMode)
+		fmt.Printf("  Reason: %s\n", analysis.Reason)
+		fmt.Printf("  Confidence: %.2f%%\n", analysis.Confidence*100)
+		fmt.Printf("  Details:\n")
+		fmt.Printf("    Imports: %v\n", analysis.Details.Imports)
+		fmt.Printf("    Uses CUDA: %v\n", analysis.Details.UsesCUDA)
+		if analysis.Details.UsesCUDA {
+			fmt.Printf("    CUDA Calls: %v\n", analysis.Details.CUDACalls)
+		}
+		fmt.Printf("    Lines Considered: %v\n", analysis.Details.Lines)
+	}
 }

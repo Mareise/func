@@ -39,4 +39,6 @@ __pycache__
 /static-analysis/dist
 /static-analysis/build
 /pythontest
-/static-analysis/static-analysis.spec
+/static-analysis/classifier.spec
+/static-analysis/my_ast.png
+/static-analysis/my_ast
