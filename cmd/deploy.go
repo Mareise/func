@@ -279,7 +279,12 @@ func runDeploy(cmd *cobra.Command, newClient ClientFactory) (err error) {
 
 	// todo check if the right point
 	// todo do something with the returned values
-	CallPythonFunctionWithExecutable()
+
+	// thats the first try to set the execution mode
+	// todo i dont know if this is the right place to do this
+	f.Deploy.Annotations = map[string]string{
+		"executionMode": CallPythonFunctionWithExecutable(),
+	}
 
 	// Get options based on the value of the config such as concrete impls
 	// of builders and pushers based on the value of the --builder flag
@@ -810,7 +815,7 @@ func isDigested(v string) (validDigest bool, err error) {
 	return ok, nil
 }
 
-func CallPythonFunctionWithExecutable() {
+func CallPythonFunctionWithExecutable() string {
 	path := "../static-analysis/dist/classifier"
 	// Add .exe extension for windows todo have to check
 	if runtime.GOOS == "windows" {
@@ -819,6 +824,7 @@ func CallPythonFunctionWithExecutable() {
 
 	if _, err := os.Stat(path); err != nil {
 		fmt.Printf("File path error: %v\n", err)
+		return ""
 	} else {
 		fmt.Println("File exists!")
 	}
@@ -827,16 +833,25 @@ func CallPythonFunctionWithExecutable() {
 	output, err := cmd.Output()
 	if err != nil {
 		fmt.Printf("failed to run analyzer: %v\n", err)
+		return ""
 	}
 
 	var result map[string]AnalysisResult
 	err = json.Unmarshal(output, &result)
 	if err != nil {
 		fmt.Printf("Failed to decode result: %v\n", err)
-		return
+		return ""
 	}
 
 	printAnalysisResult(result)
+
+	for _, analysis := range result {
+		if analysis.ExecutionMode == "GPU" {
+			return "GPU"
+		}
+	}
+	return ""
+
 }
 
 func printAnalysisResult(result map[string]AnalysisResult) {
