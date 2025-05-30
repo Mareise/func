@@ -282,9 +282,18 @@ func runDeploy(cmd *cobra.Command, newClient ClientFactory) (err error) {
 
 	// thats the first try to set the execution mode
 	// todo i dont know if this is the right place to do this
-	f.Deploy.Annotations = map[string]string{
-		"executionMode": CallPythonFunctionWithExecutable(),
+	f.Deploy.Annotations["executionMode"] = CallPythonFunctionWithExecutable()
+
+	if f.Deploy.Options.Resources == nil {
+		f.Deploy.Options.Resources = &fn.ResourcesOptions{}
 	}
+	if f.Deploy.Options.Resources.Limits == nil {
+		f.Deploy.Options.Resources.Limits = &fn.ResourcesLimitsOptions{}
+	}
+
+	// todo set that according to the outcome of analysis
+	gpuVal := "1"
+	f.Deploy.Options.Resources.Limits.GPU = &gpuVal
 
 	// Get options based on the value of the config such as concrete impls
 	// of builders and pushers based on the value of the --builder flag

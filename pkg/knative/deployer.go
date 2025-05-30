@@ -171,6 +171,7 @@ func (d *Deployer) Deploy(ctx context.Context, f fn.Function) (fn.DeploymentResu
 		out = os.Stderr
 	}
 	since := time.Now()
+	// Starts collecting logs from the function's pod and buffers them in case of errors.
 	go func() {
 		_ = GetKServiceLogs(ctx, namespace, f.Name, f.Deploy.Image, &since, out)
 	}()
@@ -489,6 +490,7 @@ func generateNewService(f fn.Function, decorator DeployDecorator, daprInstalled 
 		},
 	}
 
+	// Set the default service options
 	err = setServiceOptions(&service.Spec.Template, f.Deploy.Options)
 	if err != nil {
 		return service, err
@@ -1090,6 +1092,16 @@ func setServiceOptions(template *v1.RevisionTemplateSpec, options fn.Options) er
 					return err
 				}
 				template.Spec.Containers[0].Resources.Limits[corev1.ResourceCPU] = value
+			}
+
+			if options.Resources.Limits.GPU != nil {
+				value, err := resource.ParseQuantity(*options.Resources.Limits.GPU)
+				if err != nil {
+					return err
+				}
+				fmt.Printf("Setting GPU resource quantity: %v\n", value)
+
+				template.Spec.Containers[0].Resources.Limits["nvidia.com/gpu"] = value
 			}
 
 			if options.Resources.Limits.Memory != nil {

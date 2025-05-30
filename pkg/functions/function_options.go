@@ -28,6 +28,7 @@ type ResourcesOptions struct {
 type ResourcesLimitsOptions struct {
 	CPU         *string `yaml:"cpu,omitempty" jsonschema:"pattern=^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$"`
 	Memory      *string `yaml:"memory,omitempty" jsonschema:"pattern=^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$"`
+	GPU         *string `yaml:"nvidia.com/gpu,omitempty" jsonschema:"pattern=^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$"`
 	Concurrency *int64  `yaml:"concurrency,omitempty" jsonschema_extras:"minimum=0"`
 }
 

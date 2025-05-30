@@ -38,7 +38,7 @@ __pycache__
 # todo has to be remove for a procuctive version
 /static-analysis/dist
 /static-analysis/build
-/pythontest
+/testfunctions
 /static-analysis/classifier.spec
 /static-analysis/my_ast.png
 /static-analysis/my_ast
