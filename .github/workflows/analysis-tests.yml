@@ -26,4 +26,5 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest static-analysis/tests/test.py
+          export PYTHONPATH=$PYTHONPATH:$(pwd)/static-analysis
+          pytest static-analysis/tests/test.py

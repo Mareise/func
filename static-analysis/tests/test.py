@@ -1,6 +1,6 @@
 import os
 
-from analyse_file import analyze_file
+from analyze_file import analyze_file
 
 TESTDATA_DIR = os.path.join(os.path.dirname(__file__), "testdata")
 

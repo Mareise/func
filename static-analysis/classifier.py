@@ -1,6 +1,6 @@
 import json
 import os
-from analyse_file import analyze_file
+from analyze_file import analyze_file
 
 def analyze_directory_for_gpu_code():
     """Analyze all non-test .py files in the directory."""
