@@ -284,6 +284,9 @@ func runDeploy(cmd *cobra.Command, newClient ClientFactory) (err error) {
 	// todo i dont know if this is the right place to do this
 	f.Deploy.Annotations["executionMode"] = CallPythonFunctionWithExecutable()
 
+	// TODO handle cpu_preferred and GPU_preferred case
+	// idea: put it in the annotation and set usage
+
 	if f.Deploy.Options.Resources == nil {
 		f.Deploy.Options.Resources = &fn.ResourcesOptions{}
 	}
@@ -855,9 +858,8 @@ func CallPythonFunctionWithExecutable() string {
 	printAnalysisResult(result)
 
 	for _, analysis := range result {
-		if analysis.ExecutionMode == "GPU" {
-			return "GPU"
-		}
+		// TODO maybe map to enum
+		return analysis.ExecutionMode
 	}
 	return ""
 

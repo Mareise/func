@@ -51,13 +51,13 @@ def analyze_file(filename):
             )
             result["confidence"] = round(0.5 + 0.1 * len(cuda_calls) + 0.1 * len(imports_found), 2)
         elif imports_found and small_calls and not big_calls:
-            result["execution_mode"] = "CPU"
+            result["execution_mode"] = "CPU_preferred"
             result["reason"] = (
                 f"Detected {len(small_calls)} small pytorch call(s) and {len(imports_found)} relevant import(s)."
             )
             result["confidence"] = round(0.5 + 0.1 * len(cuda_calls) + 0.1 * len(imports_found), 2)
         elif imports_found and big_calls:
-            result["execution_mode"] = "GPU"
+            result["execution_mode"] = "GPU_preferred"
             result["reason"] = (
                 f"Detected {len(big_calls)} big pytorch call(s) and {len(imports_found)} relevant import(s)."
             )

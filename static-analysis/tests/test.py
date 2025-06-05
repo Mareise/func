@@ -20,7 +20,7 @@ class TestCPUClassification:
     def test_with_small_pytorch_tensor(self):
         test_file = os.path.join(CPU_TESTDATA_DIR, "small-pytorch.py")
         result = analyze_file(test_file)
-        assert result["execution_mode"] == "CPU"
+        assert result["execution_mode"] == "CPU_preferred"
         assert result["details"]["uses_cuda"] is False
         assert len(result["details"]["small_calls"]) == 2
         assert len(result["details"]["big_calls"]) == 0
@@ -36,13 +36,28 @@ class TestGPUClassification:
     def test_with_big_pytorch_tensor(self):
         test_file = os.path.join(GPU_TESTDATA_DIR, "big-pytorch.py")
         result = analyze_file(test_file)
-        assert result["execution_mode"] == "GPU"
+        assert result["execution_mode"] == "GPU_preferred"
         assert result["details"]["uses_cuda"] is False
         assert len(result["details"]["small_calls"]) == 2
         assert len(result["details"]["big_calls"]) == 1
 
-
 class TestTensorFlowTensorSizeEstimation:
+    @pytest.mark.parametrize("code,expected", [
+        ("torch.zeros(3, 4)", 12),
+        ("torch.zeros((2, 5))", 10),
+        ("torch.ones(16)", 16),
+        ("torch.randn(128, 256)", 128 * 256),
+        ("torch.empty()", None),
+        ("torch.zeros(a, b)", None),
+        ("torch.tensor([2.0])", 1),
+        ("torch.tensor([1, 2, 3])", 3),
+        ("torch.tensor([[1, 2], [3, 4]])", 4),
+        ("torch.tensor(" + str([[i for i in range(100)] for _ in range(100)]) + ")", 100 * 100),
+    ])
+    def test_estimate_pytorch_tensor_size(self, code, expected):
+        node = ast.parse(code).body[0].value
+        assert estimate_pytorch_tensor_size(node) == expected
+
     @pytest.mark.parametrize("code,expected", [
         ("tf.zeros([3, 4])", 12),
         ("tf.zeros((2, 5))", 10),
@@ -55,6 +70,6 @@ class TestTensorFlowTensorSizeEstimation:
         ("tf.constant([[1, 2], [3, 4]])", 4),
         ("tf.constant(" + str([[i for i in range(100)] for _ in range(100)]) + ")", 100 * 100),
     ])
-    def test_tensor_size(self, code, expected):
+    def test_estimate_tensorflow_tensor_size(self, code, expected):
         node = ast.parse(code).body[0].value
         assert estimate_tensorflow_tensor_size(node) == expected
