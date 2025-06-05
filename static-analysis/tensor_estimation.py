@@ -3,7 +3,7 @@ import ast
 from util import get_full_attr_name
 
 
-def estimate_tensor_size(call_node):
+def estimate_pytorch_tensor_size(call_node):
     size = 1
     found_shape = False
 
@@ -15,7 +15,7 @@ def estimate_tensor_size(call_node):
     for arg in call_node.args:
         # Case 1: torch.tensor([...]) — count elements in nested list
         if func_name.endswith("tensor") and isinstance(arg, ast.List):
-            size = count_elements_in_list(arg)
+            size = count_elements(arg)
             return size if size > 0 else None
 
         # Case 2: Shape as Tuple or List
@@ -41,8 +41,38 @@ def estimate_tensor_size(call_node):
 
     return size if found_shape else None
 
+def estimate_tensorflow_tensor_size(call_node):
+    if not isinstance(call_node, ast.Call):
+        return None
 
-def count_elements_in_list(node):
+    full_name = get_full_attr_name(call_node.func)
+    if full_name == "tf.constant":
+        if call_node.args:
+            arg = call_node.args[0]
+            return count_elements(arg)
+        return None
+
+    for arg in call_node.args:
+        if isinstance(arg, (ast.List, ast.Tuple)):
+            dims = []
+            for elt in arg.elts:
+                if isinstance(elt, ast.Constant) and isinstance(elt.value, int):
+                    dims.append(elt.value)
+                else:
+                    return None
+            if dims:
+                size = 1
+                for dim in dims:
+                    size *= dim
+                return size
+
+        elif isinstance(arg, ast.ListComp) or isinstance(arg, ast.Call):
+            return None
+
+    return None
+
+
+def count_elements(node):
     """
     Recursively count total number of constants in a nested ast.List
     """
@@ -53,5 +83,5 @@ def count_elements_in_list(node):
         if isinstance(elt, ast.Constant):
             total += 1
         elif isinstance(elt, ast.List):
-            total += count_elements_in_list(elt)
+            total += count_elements(elt)
     return total

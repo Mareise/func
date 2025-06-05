@@ -1,11 +1,12 @@
 import ast
 
-from tensor_estimation import estimate_tensor_size
+from tensor_estimation import estimate_pytorch_tensor_size, estimate_tensorflow_tensor_size
 from util import get_full_attr_name
 
 GPU_IMPORTS = {'torch', 'tensorflow', 'cupy', 'jax'}
 CUDA_KEYWORDS = {'cuda', 'device', 'is_available'}
-TENSOR_OPS = {'tensor', 'randn', 'zeros', 'ones', 'empty'}
+PYTORCH_TENSOR_OPS = {'tensor', 'randn', 'zeros', 'ones', 'empty'}
+TENSORFLOW_TENSOR_OPS = {'constant', 'zeros', 'ones', 'fill', 'random.uniform', 'random.normal'}
 
 
 def analyze_file(filename):
@@ -100,15 +101,29 @@ class GPUCodeAnalyzer(ast.NodeVisitor):
             self.cuda_calls.append(full_name)
             self.lines_considered.append(node.lineno)
 
-        # TODO - add support for other tensor libraries
-        # Check for "small" tensor operations
-        if is_tensor_op(full_name):
-            size = estimate_tensor_size(node)
-            if size < 1000:
-                self.small_calls.append((full_name, size, node.lineno))
-            else:
-                self.big_calls.append((full_name, size, node.lineno))
+        # Track pytorch function calls
+        if is_pytorch_tensor_op(full_name):
+            size = estimate_pytorch_tensor_size(node)
+            if size is not None:
+                if size < 1000:
+                    self.small_calls.append(("pytorch", full_name, size, node.lineno))
+                else:
+                    self.big_calls.append(("pytorch", full_name, size, node.lineno))
+
+        # Track tensorflow function calls
+        elif is_tensorflow_tensor_op(full_name):
+            size = estimate_tensorflow_tensor_size(node)
+            if size is not None:
+                if size < 1000:
+                    self.small_calls.append(("tensorflow", full_name, size, node.lineno))
+                else:
+                    self.big_calls.append(("tensorflow", full_name, size, node.lineno))
+
         self.generic_visit(node)
 
-def is_tensor_op(full_name):
-    return any(full_name.endswith(f".{op}") for op in TENSOR_OPS)
+def is_pytorch_tensor_op(full_name):
+    return full_name.startswith("torch.") and any(full_name.endswith(f".{op}") for op in PYTORCH_TENSOR_OPS)
+
+def is_tensorflow_tensor_op(full_name):
+    return full_name.startswith("tf.") and any(full_name.endswith(f".{op}") for op in TENSORFLOW_TENSOR_OPS)
+

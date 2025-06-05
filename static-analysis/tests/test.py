@@ -3,7 +3,7 @@ import pytest
 import ast
 
 from analyze_file import analyze_file
-from tensor_estimation import estimate_tensor_size
+from tensor_estimation import estimate_pytorch_tensor_size, estimate_tensorflow_tensor_size
 
 TESTDATA_DIR = os.path.join(os.path.dirname(__file__), "testdata")
 
@@ -53,4 +53,20 @@ def test_cpu_classification_with_big_pytorch_tensor_size():
 ])
 def test_estimate_tensor_size(code, expected):
     node = ast.parse(code).body[0].value
-    assert estimate_tensor_size(node) == expected
+    assert estimate_pytorch_tensor_size(node) == expected
+
+@pytest.mark.parametrize("code,expected", [
+    ("tf.zeros([3, 4])", 12),
+    ("tf.zeros((2, 5))", 10),
+    ("tf.ones([16])", 16),
+    ("tf.random.uniform([128, 256])", 128 * 256),
+    ("tf.zeros([])", None),
+    ("tf.zeros(shape)", None),
+    ("tf.constant([2.0])", 1),
+    ("tf.constant([1, 2, 3])", 3),
+    ("tf.constant([[1, 2], [3, 4]])", 4),
+    ("tf.constant(" + str([[i for i in range(100)] for _ in range(100)]) + ")", 100 * 100),
+])
+def test_estimate_tensorflow_tensor_size(code, expected):
+    node = ast.parse(code).body[0].value
+    assert estimate_tensorflow_tensor_size(node) == expected
