@@ -12,7 +12,7 @@ class TestCPUClassification:
     def test_basic_cpu_classification(self):
         test_file = os.path.join(CPU_TESTDATA_DIR, "cpu.py")
         result = analyze_file(test_file)
-        assert result["execution_mode"] == "CPU"
+        assert result["execution_mode"] == "cpu"
         assert result["details"]["uses_cuda"] is False
         assert len(result["details"]["big_calls"]) == 0
         assert len(result["details"]["small_calls"]) == 0
@@ -20,7 +20,7 @@ class TestCPUClassification:
     def test_with_small_pytorch_tensor(self):
         test_file = os.path.join(CPU_TESTDATA_DIR, "small-pytorch.py")
         result = analyze_file(test_file)
-        assert result["execution_mode"] == "CPU_preferred"
+        assert result["execution_mode"] == "cpu_preferred"
         assert result["details"]["uses_cuda"] is False
         assert len(result["details"]["small_calls"]) == 2
         assert len(result["details"]["big_calls"]) == 0
@@ -30,13 +30,13 @@ class TestGPUClassification:
     def test_with_cuda_usage(self):
         test_file = os.path.join(GPU_TESTDATA_DIR, "gpu.py")
         result = analyze_file(test_file)
-        assert result["execution_mode"] == "GPU"
+        assert result["execution_mode"] == "gpu"
         assert result["details"]["uses_cuda"] is True
 
     def test_with_big_pytorch_tensor(self):
         test_file = os.path.join(GPU_TESTDATA_DIR, "big-pytorch.py")
         result = analyze_file(test_file)
-        assert result["execution_mode"] == "GPU_preferred"
+        assert result["execution_mode"] == "gpu_preferred"
         assert result["details"]["uses_cuda"] is False
         assert len(result["details"]["small_calls"]) == 2
         assert len(result["details"]["big_calls"]) == 1

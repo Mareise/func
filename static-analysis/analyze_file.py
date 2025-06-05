@@ -1,17 +1,14 @@
 import ast
 
+from constants import ExecutionModes, GPU_IMPORTS, CUDA_KEYWORDS, TENSOR_SIZE_THRESHOLD_TENSORFLOW, \
+    TENSOR_SIZE_THRESHOLD_PYTORCH, PYTORCH_TENSOR_OPS, TENSORFLOW_TENSOR_OPS
 from tensor_estimation import estimate_pytorch_tensor_size, estimate_tensorflow_tensor_size
 from util import get_full_attr_name
-
-GPU_IMPORTS = {'torch', 'tensorflow', 'cupy', 'jax'}
-CUDA_KEYWORDS = {'cuda', 'device', 'is_available'}
-PYTORCH_TENSOR_OPS = {'tensor', 'randn', 'zeros', 'ones', 'empty'}
-TENSORFLOW_TENSOR_OPS = {'constant', 'zeros', 'ones', 'fill', 'random.uniform', 'random.normal'}
 
 
 def analyze_file(filename):
     result = {
-        "execution_mode": "CPU",
+        "execution_mode": ExecutionModes.CPU,
         "reason": "",
         "confidence": 0.0,
         "details": {
@@ -45,19 +42,19 @@ def analyze_file(filename):
 
         # TODO rework
         if cuda_calls:
-            result["execution_mode"] = "GPU"
+            result["execution_mode"] = ExecutionModes.GPU
             result["reason"] = (
                 f"Detected {len(cuda_calls)} cuda call(s)"
             )
             result["confidence"] = round(0.5 + 0.1 * len(cuda_calls) + 0.1 * len(imports_found), 2)
         elif imports_found and small_calls and not big_calls:
-            result["execution_mode"] = "CPU_preferred"
+            result["execution_mode"] = ExecutionModes.CPU_PREFERRED
             result["reason"] = (
                 f"Detected {len(small_calls)} small pytorch call(s) and {len(imports_found)} relevant import(s)."
             )
             result["confidence"] = round(0.5 + 0.1 * len(cuda_calls) + 0.1 * len(imports_found), 2)
         elif imports_found and big_calls:
-            result["execution_mode"] = "GPU_preferred"
+            result["execution_mode"] = ExecutionModes.GPU_PREFERRED
             result["reason"] = (
                 f"Detected {len(big_calls)} big pytorch call(s) and {len(imports_found)} relevant import(s)."
             )
@@ -106,7 +103,7 @@ class GPUCodeAnalyzer(ast.NodeVisitor):
         if is_pytorch_tensor_op(full_name):
             size = estimate_pytorch_tensor_size(node)
             if size is not None:
-                if size < 1000:
+                if size < TENSOR_SIZE_THRESHOLD_PYTORCH:
                     self.small_calls.append(("pytorch", full_name, size, node.lineno))
                 else:
                     self.big_calls.append(("pytorch", full_name, size, node.lineno))
@@ -115,7 +112,7 @@ class GPUCodeAnalyzer(ast.NodeVisitor):
         elif is_tensorflow_tensor_op(full_name):
             size = estimate_tensorflow_tensor_size(node)
             if size is not None:
-                if size < 1000:
+                if size < TENSOR_SIZE_THRESHOLD_TENSORFLOW:
                     self.small_calls.append(("tensorflow", full_name, size, node.lineno))
                 else:
                     self.big_calls.append(("tensorflow", full_name, size, node.lineno))
