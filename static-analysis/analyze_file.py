@@ -101,6 +101,7 @@ class GPUCodeAnalyzer(ast.NodeVisitor):
             self.cuda_calls.append(full_name)
             self.lines_considered.append(node.lineno)
 
+        # TODO check for numpy
         # Track pytorch function calls
         if is_pytorch_tensor_op(full_name):
             size = estimate_pytorch_tensor_size(node)
