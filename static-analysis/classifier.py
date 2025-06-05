@@ -13,7 +13,7 @@ def analyze_directory_for_gpu_code():
                     filename.endswith('.py')
                     and 'test' not in filename.lower()
                     and 'classifier' not in filename.lower() # not needed when executing executable
-                    and 'analyse_file' not in filename.lower() # not needed when executing executable
+                    and 'analyze_file' not in filename.lower() # not needed when executing executable
                     and 'venv' not in root # not needed when executing executable
             ):
                 filepath = os.path.join(root, filename)
