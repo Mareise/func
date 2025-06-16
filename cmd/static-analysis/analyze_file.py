@@ -67,7 +67,7 @@ def analyze_file(filename):
         result["reason"] = f"Failed to analyze {filename}: {e}"
         result["confidence"] = 0.0
 
-    print(result)
+    # print(result)
     return result
 
 

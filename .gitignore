@@ -36,9 +36,9 @@ __pycache__
 
 # Static code analysis
 # todo has to be remove for a procuctive version
-/static-analysis/dist
-/static-analysis/build
+/cmd/static-analysis/dist
+/cmd/static-analysis/build
 /testfunctions
-/static-analysis/classifier.spec
-/static-analysis/my_ast.png
-/static-analysis/my_ast
+/cmd/static-analysis/classifier.spec
+/cmd/static-analysis/my_ast.png
+/cmd/static-analysis/my_ast

@@ -17,7 +17,7 @@ def analyze_directory_for_gpu_code():
                     and 'venv' not in root # not needed when executing executable
             ):
                 filepath = os.path.join(root, filename)
-                print(f"Analyzing {filepath}...")  # only for testing
+                # print(f"Analyzing {filepath}...")  # only for testing
                 analysis_results[filename] = analyze_file(filepath)
 
     print(json.dumps(analysis_results, indent=4))

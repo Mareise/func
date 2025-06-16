@@ -13,6 +13,9 @@ BIN_LINUX_ARM64   ?= $(BIN)_linux_arm64
 BIN_LINUX_PPC64LE ?= $(BIN)_linux_ppc64le
 BIN_LINUX_S390X   ?= $(BIN)_linux_s390x
 BIN_WINDOWS       ?= $(BIN)_windows_amd64.exe
+PYTHON_SRC		  ?= static-analysis/classifier.py
+PYTHON_DIST		  ?= static-analysis/dist
+PYTHON_EXE        ?= $(PYTHON_DIST)/classifier
 
 # Utilities
 BIN_GOLANGCI_LINT ?= "$(PWD)/bin/golangci-lint"
@@ -43,7 +46,7 @@ MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 .PHONY: test docs
 
 # Default Targets
-all: build docs
+all: pybuild build docs
 	@echo '🎉 Build process completed!'
 
 # Help Text
@@ -59,6 +62,10 @@ help:
 ###############
 ##@ Development
 ###############
+
+pybuild:
+	cd cmd/static-analysis && pyinstaller --onefile $(notdir $(PYTHON_SRC))
+	@echo "Python executable built at $(PYTHON_EXE)"
 
 build: $(BIN) ## (default) Build binary for current OS
 
@@ -107,8 +114,12 @@ clean_templates:
 	@rm -rf templates/typescript/http/build
 	@rm -rf templates/typescript/http/node_modules
 
+clean_pycache:
+	rm -rf dist static-analysis/build static-analysis/dist static-analysis/__pycache__ static-analysis/*.spec
+	@echo "Cleaned up build artifacts"
+
 .PHONY: clean
-clean: clean_templates ## Remove generated artifacts such as binaries and schemas
+clean: clean_templates clean_pycache ## Remove generated artifacts such as binaries and schemas
 	rm -f $(BIN) $(BIN_WINDOWS) $(BIN_LINUX) $(BIN_DARWIN_AMD64) $(BIN_DARWIN_ARM64)
 	rm -f $(BIN_GOLANGCI_LINT)
 	rm -f schema/func_yaml-schema.json
@@ -235,7 +246,7 @@ darwin-amd64: $(BIN_DARWIN_AMD64) ## Build for Darwin (macOS)
 $(BIN_DARWIN_AMD64): generate/zz_filesystem_generated.go
 	env CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o $(BIN_DARWIN_AMD64) -trimpath -ldflags "$(LDFLAGS) -w -s" ./cmd/$(BIN)
 
-linux-amd64: $(BIN_LINUX_AMD64) ## Build for Linux amd64
+linux-amd64: pybuild $(BIN_LINUX_AMD64) clean_pycache ## Build for Linux amd64
 
 $(BIN_LINUX_AMD64): generate/zz_filesystem_generated.go
 	env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(BIN_LINUX_AMD64) -trimpath -ldflags "$(LDFLAGS) -w -s" ./cmd/$(BIN)

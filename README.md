@@ -32,5 +32,12 @@ The `func` Working Group meets @ 10:00 US Eastern every Tuesday, we'd love to ha
 ### Deploy
 ```
 cd pythontest
-go run ../main.go deploy --registry index.docker.io/maxireis/ -b=s2i -v
+go run ../../main.go deploy --registry index.docker.io/maxireis/ -b=s2i -v
+```
+
+## Deployment
+```
+make linux-amd64
+chmod +x func
+mv func /usr/local/bin
 ```

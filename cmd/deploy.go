@@ -1,12 +1,14 @@
 package cmd
 
 import (
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -23,6 +25,9 @@ import (
 	fn "knative.dev/func/pkg/functions"
 	"knative.dev/func/pkg/k8s"
 )
+
+//go:embed static-analysis/dist/classifier
+var embeddedClassifier []byte
 
 func NewDeployCmd(newClient ClientFactory) *cobra.Command {
 	cmd := &cobra.Command{
@@ -828,20 +833,19 @@ func isDigested(v string) (validDigest bool, err error) {
 }
 
 func CallPythonFunctionWithExecutable() string {
-	path := "../static-analysis/dist/classifier"
+	tmpDir := os.TempDir()
+	tmpPath := filepath.Join(tmpDir, "classifier")
 	// Add .exe extension for windows todo have to check
 	if runtime.GOOS == "windows" {
-		path += ".exe"
+		tmpPath += ".exe"
 	}
 
-	if _, err := os.Stat(path); err != nil {
-		fmt.Printf("File path error: %v\n", err)
+	if err := os.WriteFile(tmpPath, embeddedClassifier, 0755); err != nil {
+		fmt.Printf("Failed to write embedded classifier: %v\n", err)
 		return ""
-	} else {
-		fmt.Println("File exists!")
 	}
 
-	cmd := exec.Command(path)
+	cmd := exec.Command(tmpPath)
 	output, err := cmd.Output()
 	if err != nil {
 		fmt.Printf("failed to run analyzer: %v\n", err)
@@ -858,11 +862,9 @@ func CallPythonFunctionWithExecutable() string {
 	printAnalysisResult(result)
 
 	for _, analysis := range result {
-		// TODO maybe map to enum
 		return analysis.ExecutionMode
 	}
 	return ""
-
 }
 
 func printAnalysisResult(result map[string]AnalysisResult) {
