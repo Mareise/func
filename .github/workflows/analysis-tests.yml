@@ -22,9 +22,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r static-analysis/requirements.txt
+          pip install -r cmd/static-analysis/requirements.txt
 
       - name: Run tests
         run: |
-          export PYTHONPATH=$PYTHONPATH:$(pwd)/static-analysis
-          pytest static-analysis/tests/test.py
+          export PYTHONPATH=$PYTHONPATH:$(pwd)/cmd/static-analysis
+          pytest cmd/static-analysis/tests/test.py
