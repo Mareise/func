@@ -26,6 +26,12 @@ For a list of all help wanted issues in Knative, take a look at [CLOTRIBUTOR](ht
 
 The `func` Working Group meets @ 10:00 US Eastern every Tuesday, we'd love to have you! For more information, see the invitation on the [Knative Team Calendar](https://calendar.google.com/calendar/u/0/embed?src=knative.team_9q83bg07qs5b9rrslp5jor4l6s@group.calendar.google.com).
 
+## Requirements
+* make
+* go 1.24.4
+* python 3.10.17
+* pyinstaller
+
 ## Testing
 ### Create
 ```go run main.go create -l python pythontest```

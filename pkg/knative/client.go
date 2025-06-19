@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	DefaultWaitingTimeout     = 120 * time.Second
+	DefaultWaitingTimeout     = 600 * time.Second
 	DefaultErrorWindowTimeout = 2 * time.Second
 )
 
