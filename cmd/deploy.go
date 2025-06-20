@@ -923,6 +923,6 @@ func resetGpuResourceLimits(f *fn.Function) {
 		return
 	}
 
-	gpuVal := ""
+	gpuVal := "0"
 	f.Deploy.Options.Resources.Limits.GPU = &gpuVal
 }
