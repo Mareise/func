@@ -285,6 +285,7 @@ func runDeploy(cmd *cobra.Command, newClient ClientFactory) (err error) {
 	// Informative non-error messages regarding the final deployment request
 	printDeployMessages(cmd.OutOrStdout(), f)
 
+	// TODO we have to reset it if it has changed
 	executionMode, _ := cmd.Flags().GetString("execution-mode")
 	print("Execution Mode: ", executionMode)
 	switch executionMode {
@@ -294,11 +295,13 @@ func runDeploy(cmd *cobra.Command, newClient ClientFactory) (err error) {
 		setInferredExecutionMode(&f, inferredExecutionMode)
 	case "cpu":
 		f.Deploy.Annotations["executionMode"] = "cpu"
+		resetGpuResourceLimits(&f)
 	case "gpu":
 		f.Deploy.Annotations["executionMode"] = "gpu"
 		setGpuResourceLimits(&f)
 	default:
 		f.Deploy.Annotations["executionMode"] = "cpu_preferred"
+		resetGpuResourceLimits(&f)
 	}
 
 	// Get options based on the value of the config such as concrete impls
@@ -899,7 +902,7 @@ func setInferredExecutionMode(f *fn.Function, exmode ExecutionMode) {
 	case GPU, GPUPreferred:
 		setGpuResourceLimits(f)
 	case CPU, CPUPreferred:
-		// No specific action needed for CPU modes
+		resetGpuResourceLimits(f)
 	}
 }
 
@@ -912,5 +915,14 @@ func setGpuResourceLimits(f *fn.Function) {
 	}
 
 	gpuVal := "1"
+	f.Deploy.Options.Resources.Limits.GPU = &gpuVal
+}
+
+func resetGpuResourceLimits(f *fn.Function) {
+	if f.Deploy.Options.Resources == nil || f.Deploy.Options.Resources.Limits == nil {
+		return
+	}
+
+	gpuVal := ""
 	f.Deploy.Options.Resources.Limits.GPU = &gpuVal
 }
