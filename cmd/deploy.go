@@ -193,6 +193,9 @@ EXAMPLES
 		"When triggering a remote deployment, set a custom volume size to allocate for the build operation ($FUNC_PVC_SIZE)")
 	cmd.Flags().String("service-account", f.Deploy.ServiceAccountName,
 		"Service account to be used in the deployed function ($FUNC_SERVICE_ACCOUNT)")
+	cmd.Flags().String("execution-mode", "auto",
+		"Execution mode to be used in the deployed function. [auto|gpu|cpu]")
+
 	// Static Flags:
 	// Options which have static defaults only (not globally configurable nor
 	// persisted with the function)
@@ -282,26 +285,21 @@ func runDeploy(cmd *cobra.Command, newClient ClientFactory) (err error) {
 	// Informative non-error messages regarding the final deployment request
 	printDeployMessages(cmd.OutOrStdout(), f)
 
-	// todo check if the right point
-	// todo do something with the returned values
-
-	// thats the first try to set the execution mode
-	// todo i dont know if this is the right place to do this
-	f.Deploy.Annotations["executionMode"] = CallPythonFunctionWithExecutable()
-
-	// TODO handle cpu_preferred and GPU_preferred case
-	// idea: put it in the annotation and set usage
-
-	if f.Deploy.Options.Resources == nil {
-		f.Deploy.Options.Resources = &fn.ResourcesOptions{}
+	executionMode, _ := cmd.Flags().GetString("execution-mode")
+	print("Execution Mode: ", executionMode)
+	switch executionMode {
+	case "auto":
+		inferredExecutionMode := getInferredExecutionMode()
+		f.Deploy.Annotations["executionMode"] = string(inferredExecutionMode)
+		setInferredExecutionMode(&f, inferredExecutionMode)
+	case "cpu":
+		f.Deploy.Annotations["executionMode"] = "cpu"
+	case "gpu":
+		f.Deploy.Annotations["executionMode"] = "gpu"
+		setGpuResourceLimits(&f)
+	default:
+		f.Deploy.Annotations["executionMode"] = "cpu_preferred"
 	}
-	if f.Deploy.Options.Resources.Limits == nil {
-		f.Deploy.Options.Resources.Limits = &fn.ResourcesLimitsOptions{}
-	}
-
-	// todo set that according to the outcome of analysis
-	gpuVal := "1"
-	f.Deploy.Options.Resources.Limits.GPU = &gpuVal
 
 	// Get options based on the value of the config such as concrete impls
 	// of builders and pushers based on the value of the --builder flag
@@ -546,10 +544,19 @@ type deployConfig struct {
 	Timestamp bool
 }
 
+type ExecutionMode string
+
+const (
+	CPU          ExecutionMode = "cpu"
+	GPU          ExecutionMode = "gpu"
+	GPUPreferred ExecutionMode = "gpu_preferred"
+	CPUPreferred ExecutionMode = "cpu_preferred"
+)
+
 type AnalysisResult struct {
-	ExecutionMode string  `json:"execution_mode"`
-	Reason        string  `json:"reason"`
-	Confidence    float64 `json:"confidence"`
+	ExecutionMode ExecutionMode `json:"execution_mode"`
+	Reason        string        `json:"reason"`
+	Confidence    float64       `json:"confidence"`
 	Details       struct {
 		Imports   []string `json:"imports"`
 		UsesCUDA  bool     `json:"uses_cuda"`
@@ -832,7 +839,7 @@ func isDigested(v string) (validDigest bool, err error) {
 	return ok, nil
 }
 
-func CallPythonFunctionWithExecutable() string {
+func getInferredExecutionMode() ExecutionMode {
 	tmpDir := os.TempDir()
 	tmpPath := filepath.Join(tmpDir, "classifier")
 	// Add .exe extension for windows todo have to check
@@ -886,4 +893,24 @@ func printAnalysisResult(result map[string]AnalysisResult) {
 		}
 		fmt.Printf("    Lines Considered: %v\n", analysis.Details.Lines)
 	}
+}
+func setInferredExecutionMode(f *fn.Function, exmode ExecutionMode) {
+	switch exmode {
+	case GPU, GPUPreferred:
+		setGpuResourceLimits(f)
+	case CPU, CPUPreferred:
+		// No specific action needed for CPU modes
+	}
+}
+
+func setGpuResourceLimits(f *fn.Function) {
+	if f.Deploy.Options.Resources == nil {
+		f.Deploy.Options.Resources = &fn.ResourcesOptions{}
+	}
+	if f.Deploy.Options.Resources.Limits == nil {
+		f.Deploy.Options.Resources.Limits = &fn.ResourcesLimitsOptions{}
+	}
+
+	gpuVal := "1"
+	f.Deploy.Options.Resources.Limits.GPU = &gpuVal
 }
