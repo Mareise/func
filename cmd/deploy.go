@@ -194,7 +194,9 @@ EXAMPLES
 	cmd.Flags().String("service-account", f.Deploy.ServiceAccountName,
 		"Service account to be used in the deployed function ($FUNC_SERVICE_ACCOUNT)")
 	cmd.Flags().String("execution-mode", "auto",
-		"Execution mode to be used in the deployed function. [auto|gpu|cpu]")
+		"Execution mode to be used in the deployed function. [auto|gpu|cpu|cpu_preferred|gpu_preferred].")
+	cmd.Flags().Bool("change-execution-mode", false,
+		"Redeploy option when reevaluation change. Only internal usage.")
 
 	// Static Flags:
 	// Options which have static defaults only (not globally configurable nor
@@ -285,7 +287,6 @@ func runDeploy(cmd *cobra.Command, newClient ClientFactory) (err error) {
 	// Informative non-error messages regarding the final deployment request
 	printDeployMessages(cmd.OutOrStdout(), f)
 
-	// TODO we have to reset it if it has changed
 	executionMode, _ := cmd.Flags().GetString("execution-mode")
 	print("Execution Mode: ", executionMode)
 	switch executionMode {
@@ -298,6 +299,12 @@ func runDeploy(cmd *cobra.Command, newClient ClientFactory) (err error) {
 		resetGpuResourceLimits(&f)
 	case "gpu":
 		f.Deploy.Annotations["executionMode"] = "gpu"
+		setGpuResourceLimits(&f)
+	case "cpu_preferred":
+		f.Deploy.Annotations["executionMode"] = "cpu_preferred"
+		resetGpuResourceLimits(&f)
+	case "gpu_preferred":
+		f.Deploy.Annotations["executionMode"] = "gpu_preferred"
 		setGpuResourceLimits(&f)
 	default:
 		f.Deploy.Annotations["executionMode"] = "cpu_preferred"
@@ -370,6 +377,7 @@ func runDeploy(cmd *cobra.Command, newClient ClientFactory) (err error) {
 				f.Deploy.Image = f.Build.Image
 			}
 		}
+		redeploy, _ := cmd.Flags().GetBool("change-execution-mode")
 		if f, err = client.Deploy(cmd.Context(), f, fn.WithDeploySkipBuildCheck(cfg.Build == "false")); err != nil {
 			return
 		}

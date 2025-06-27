@@ -298,6 +298,9 @@ func (d *Deployer) Deploy(ctx context.Context, f fn.Function) (fn.DeploymentResu
 			return fn.DeploymentResult{}, err
 		}
 
+		// could be used
+		// todo have to call this like that when maybe certain flag is set
+		// maybe in a seperate command?
 		_, err = client.UpdateServiceWithRetry(ctx, f.Name, updateService(f, previousService, newEnv, newEnvFrom, newVolumes, newVolumeMounts, d.decorator, daprInstalled), 3)
 		if err != nil {
 			err = fmt.Errorf("knative deployer failed to update the Knative Service: %v", err)
@@ -603,7 +606,7 @@ func updateService(f fn.Function, previousService *v1.Service, newEnv []corev1.E
 		cp := &service.Spec.Template.Spec.Containers[0]
 		setHealthEndpoints(f, cp)
 
-		err := setServiceOptions(&service.Spec.Template, f.Deploy.Options)
+		err := setServiceOptions(&service.Spec.Template, f.Deploy.Options) // here the recources are set
 		if err != nil {
 			return service, err
 		}

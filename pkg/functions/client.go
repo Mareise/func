@@ -1214,7 +1214,7 @@ func Fingerprint(root string) (hash, log string, err error) {
 			return nil
 		}
 		// Always ignore .func, .git (TODO: .funcignore)
-		if info.IsDir() && (info.Name() == RunDataDir || info.Name() == ".git") {
+		if info.IsDir() && (info.Name() == RunDataDir || info.Name() == ".git" || info.Name() == ".s2i") {
 			return filepath.SkipDir
 		}
 		fmt.Fprintf(h, "%v:%v:", path, info.ModTime().UnixNano())   // Write to the Hasher
