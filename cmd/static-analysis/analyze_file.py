@@ -48,12 +48,12 @@ def analyze_file(filename):
         elif imports_found and small_calls and not big_calls:
             result["execution_mode"] = ExecutionModes.CPU_PREFERRED
             result["reason"] = (
-                f"Detected {len(small_calls)} small pytorch call(s) and {len(imports_found)} relevant imports."
+                f"Detected {len(small_calls)} small pytorch/tensorflow call(s) and {len(imports_found)} relevant imports."
             )
         elif imports_found and big_calls:
             result["execution_mode"] = ExecutionModes.GPU_PREFERRED
             result["reason"] = (
-                f"Detected {len(big_calls)} big pytorch call(s) and {len(imports_found)} relevant imports."
+                f"Detected {len(big_calls)} big pytorch/tensorflow call(s) and {len(imports_found)} relevant imports."
             )
         elif imports_found:
             result["execution_mode"] = ExecutionModes.CPU_PREFERRED
@@ -92,10 +92,6 @@ class GPUCodeAnalyzer(ast.NodeVisitor):
     def visit_Call(self, node):
         full_name = get_full_attr_name(node.func)
 
-        # Track GPU-related function calls
-        # if any(keyword in full_name for keyword in CUDA_KEYWORDS):
-            # self.explicit_gpu_calls.append(full_name)
-            # self.lines_considered.append(node.lineno)
         self.explicit_gpu_calls, self.lines_considered = explicit_gpu_calls_check(node)
 
         # TODO check for numpy, pandas, https://github.com/rapidsai/cuml
@@ -172,6 +168,20 @@ def explicit_gpu_calls_check(node):
             #     # For other cases, you can add more rules or ignore
             #     pass
 
+    # Detect model.to("cuda")
+    elif is_attr_call(node.func, 'to'):
+        if node.args:
+            first_arg = node.args[0]
+            if isinstance(first_arg, ast.Constant) and first_arg.value == "cuda":
+                explicit_gpu_calls_lines.append(node.lineno)
+                explicit_gpu_calls.append(get_full_attr_name(node.func))
+
+    # Detect model.cuda()
+    elif is_attr_call(node.func, 'cuda'):
+        # cuda() typically has no args, but if it has args you can extend this logic
+        explicit_gpu_calls_lines.append(node.lineno)
+        explicit_gpu_calls.append(get_full_attr_name(node.func))
+
     return explicit_gpu_calls, explicit_gpu_calls_lines
 
 
@@ -188,3 +198,7 @@ def is_cuda_is_available(call_node):
             if isinstance(value.value, ast.Name) and value.value.id == 'torch':
                 return True
     return False
+
+
+def is_attr_call(node, attr_name):
+    return isinstance(node, ast.Attribute) and node.attr == attr_name

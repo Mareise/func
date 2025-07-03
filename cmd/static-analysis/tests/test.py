@@ -39,9 +39,24 @@ class TestGPUClassification:
         assert result["execution_mode"] == "gpu"
         assert result["details"]["explicit_gpu_calls"] is True
 
+    def test_with_cuda_usage_1(self):
+        test_file = os.path.join(GPU_TESTDATA_DIR, "gpu_1.py")
+        result = analyze_file(test_file)
+        assert result["execution_mode"] == "gpu"
+        assert result["details"]["explicit_gpu_calls"] is True
+
     def test_with_big_pytorch_tensor(self):
         test_file = os.path.join(GPU_TESTDATA_DIR, "big-pytorch.py")
         result = analyze_file(test_file)
+        assert result["execution_mode"] == "gpu_preferred"
+        assert result["details"]["explicit_gpu_calls"] is False
+        assert len(result["details"]["small_calls"]) == 2
+        assert len(result["details"]["big_calls"]) == 1
+
+    def test_with_big_tensorflow_tensor(self):
+        test_file = os.path.join(GPU_TESTDATA_DIR, "big-tensorflow.py")
+        result = analyze_file(test_file)
+        print(result)
         assert result["execution_mode"] == "gpu_preferred"
         assert result["details"]["explicit_gpu_calls"] is False
         assert len(result["details"]["small_calls"]) == 2
