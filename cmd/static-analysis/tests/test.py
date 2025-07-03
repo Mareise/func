@@ -13,7 +13,7 @@ class TestCPUClassification:
         test_file = os.path.join(CPU_TESTDATA_DIR, "cpu.py")
         result = analyze_file(test_file)
         assert result["execution_mode"] == "cpu"
-        assert result["details"]["uses_cuda"] is False
+        assert result["details"]["has_explicit_gpu_calls"] is False
         assert len(result["details"]["big_calls"]) == 0
         assert len(result["details"]["small_calls"]) == 0
 
@@ -21,7 +21,7 @@ class TestCPUClassification:
         test_file = os.path.join(CPU_TESTDATA_DIR, "small-pytorch.py")
         result = analyze_file(test_file)
         assert result["execution_mode"] == "cpu_preferred"
-        assert result["details"]["explicit_gpu_calls"] is False
+        assert result["details"]["has_explicit_gpu_calls"] is False
         assert len(result["details"]["small_calls"]) == 2
         assert len(result["details"]["big_calls"]) == 0
 
@@ -29,14 +29,14 @@ class TestCPUClassification:
         test_file = os.path.join(CPU_TESTDATA_DIR, "cpu-with-device-request.py")
         result = analyze_file(test_file)
         assert result["execution_mode"] == "cpu_preferred"
-        assert result["details"]["explicit_gpu_calls"] is False
+        assert result["details"]["has_explicit_gpu_calls"] is False
 
     def test_with_real_case(self):
         test_file = os.path.join(CPU_TESTDATA_DIR, "real-case.py")
         result = analyze_file(test_file)
         print(result)
         assert result["execution_mode"] == "cpu_preferred"
-        assert result["details"]["explicit_gpu_calls"] is False
+        assert result["details"]["has_explicit_gpu_calls"] is False
 
 
 class TestGPUClassification:
@@ -44,19 +44,19 @@ class TestGPUClassification:
         test_file = os.path.join(GPU_TESTDATA_DIR, "gpu.py")
         result = analyze_file(test_file)
         assert result["execution_mode"] == "gpu"
-        assert result["details"]["explicit_gpu_calls"] is True
+        assert result["details"]["has_explicit_gpu_calls"] is True
 
     def test_with_cuda_usage_1(self):
         test_file = os.path.join(GPU_TESTDATA_DIR, "gpu_1.py")
         result = analyze_file(test_file)
         assert result["execution_mode"] == "gpu"
-        assert result["details"]["explicit_gpu_calls"] is True
+        assert result["details"]["has_explicit_gpu_calls"] is True
 
     def test_with_big_pytorch_tensor(self):
         test_file = os.path.join(GPU_TESTDATA_DIR, "big-pytorch.py")
         result = analyze_file(test_file)
         assert result["execution_mode"] == "gpu_preferred"
-        assert result["details"]["explicit_gpu_calls"] is False
+        assert result["details"]["has_explicit_gpu_calls"] is False
         assert len(result["details"]["small_calls"]) == 2
         assert len(result["details"]["big_calls"]) == 1
 
@@ -65,7 +65,7 @@ class TestGPUClassification:
         result = analyze_file(test_file)
         print(result)
         assert result["execution_mode"] == "gpu_preferred"
-        assert result["details"]["explicit_gpu_calls"] is False
+        assert result["details"]["has_explicit_gpu_calls"] is False
         assert len(result["details"]["small_calls"]) == 2
         assert len(result["details"]["big_calls"]) == 1
 
