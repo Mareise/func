@@ -5,8 +5,7 @@ class ExecutionModes:
     CPU_PREFERRED = 'cpu_preferred'
 
 
-GPU_IMPORTS = {'torch', 'tensorflow', 'cupy', 'jax'}
-CUDA_KEYWORDS = {'cuda', 'device', 'is_available'}
+GPU_IMPORTS = {'torch', 'tensorflow'}
 PYTORCH_TENSOR_OPS = {'tensor', 'randn', 'zeros', 'ones', 'empty'}
 TENSORFLOW_TENSOR_OPS = {'constant', 'zeros', 'ones', 'fill', 'random.uniform', 'random.normal'}
 

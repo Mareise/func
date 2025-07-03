@@ -1,6 +1,6 @@
 import ast
 
-from constants import ExecutionModes, GPU_IMPORTS, CUDA_KEYWORDS, TENSOR_SIZE_THRESHOLD_TENSORFLOW, \
+from constants import ExecutionModes, GPU_IMPORTS, TENSOR_SIZE_THRESHOLD_TENSORFLOW, \
     TENSOR_SIZE_THRESHOLD_PYTORCH, PYTORCH_TENSOR_OPS, TENSORFLOW_TENSOR_OPS
 from tensor_estimation import estimate_pytorch_tensor_size, estimate_tensorflow_tensor_size
 from util import get_full_attr_name
@@ -10,11 +10,10 @@ def analyze_file(filename):
     result = {
         "execution_mode": ExecutionModes.CPU,
         "reason": "",
-        "confidence": 0.0,
         "details": {
             "imports": [],
             "uses_cuda": False,
-            "cuda_calls": [],
+            "explicit_gpu_calls": [],
             "lines_considered": []
         }
     }
@@ -27,45 +26,45 @@ def analyze_file(filename):
         analyzer = GPUCodeAnalyzer()
         analyzer.visit(tree)
 
-        cuda_calls = analyzer.cuda_calls
+        explicit_gpu_calls = analyzer.explicit_gpu_calls
         imports_found = analyzer.imports
         lines_considered = analyzer.lines_considered
         small_calls = analyzer.small_calls
         big_calls = analyzer.big_calls
 
-        result["details"]["cuda_calls"] = list(set(cuda_calls))
+        result["details"]["explicit_gpu_calls"] = list(set(explicit_gpu_calls))
         result["details"]["imports"] = list(imports_found)
-        result["details"]["uses_cuda"] = bool(cuda_calls)
+        result["details"]["explicit_gpu_calls"] = bool(explicit_gpu_calls)
         result["details"]["lines_considered"] = lines_considered
         result["details"]["small_calls"] = small_calls
         result["details"]["big_calls"] = big_calls
 
         # TODO rework
-        if cuda_calls:
+        if explicit_gpu_calls:
             result["execution_mode"] = ExecutionModes.GPU
             result["reason"] = (
-                f"Detected {len(cuda_calls)} cuda call(s)"
+                f"Detected {len(explicit_gpu_calls)} explicit gpu calls"
             )
-            result["confidence"] = round(0.5 + 0.1 * len(cuda_calls) + 0.1 * len(imports_found), 2)
         elif imports_found and small_calls and not big_calls:
             result["execution_mode"] = ExecutionModes.CPU_PREFERRED
             result["reason"] = (
-                f"Detected {len(small_calls)} small pytorch call(s) and {len(imports_found)} relevant import(s)."
+                f"Detected {len(small_calls)} small pytorch call(s) and {len(imports_found)} relevant imports."
             )
-            result["confidence"] = round(0.5 + 0.1 * len(cuda_calls) + 0.1 * len(imports_found), 2)
         elif imports_found and big_calls:
             result["execution_mode"] = ExecutionModes.GPU_PREFERRED
             result["reason"] = (
-                f"Detected {len(big_calls)} big pytorch call(s) and {len(imports_found)} relevant import(s)."
+                f"Detected {len(big_calls)} big pytorch call(s) and {len(imports_found)} relevant imports."
             )
-            result["confidence"] = round(0.5 + 0.1 * len(cuda_calls) + 0.1 * len(imports_found), 2)
+        elif imports_found:
+            result["execution_mode"] = ExecutionModes.CPU_PREFERRED
+            result["reason"] = (
+                f"Detected {len(imports_found)} relevant imports."
+            )
         else:
             result["reason"] = "No GPU-related calls or imports detected."
-            result["confidence"] = 0.1
 
     except Exception as e:
         result["reason"] = f"Failed to analyze {filename}: {e}"
-        result["confidence"] = 0.0
 
     # print(result)
     return result
@@ -74,7 +73,7 @@ def analyze_file(filename):
 class GPUCodeAnalyzer(ast.NodeVisitor):
     def __init__(self):
         self.imports = set()
-        self.cuda_calls = []
+        self.explicit_gpu_calls = []
         self.lines_considered = []
         self.small_calls = []
         self.big_calls = []
@@ -94,9 +93,10 @@ class GPUCodeAnalyzer(ast.NodeVisitor):
         full_name = get_full_attr_name(node.func)
 
         # Track GPU-related function calls
-        if any(keyword in full_name for keyword in CUDA_KEYWORDS):
-            self.cuda_calls.append(full_name)
-            self.lines_considered.append(node.lineno)
+        # if any(keyword in full_name for keyword in CUDA_KEYWORDS):
+            # self.explicit_gpu_calls.append(full_name)
+            # self.lines_considered.append(node.lineno)
+        self.explicit_gpu_calls, self.lines_considered = explicit_gpu_calls_check(node)
 
         # TODO check for numpy, pandas, https://github.com/rapidsai/cuml
         # todo maybe check if function uses a AI model
@@ -120,9 +120,71 @@ class GPUCodeAnalyzer(ast.NodeVisitor):
 
         self.generic_visit(node)
 
+    # Track tensorflow with blocks
+    # I am not sure if this is necessary because we scan for tensors anyway and tensorflow opts always for cpu if no gpu is available
+    # def visit_With(self, node):
+    #     for item in node.items:
+    #         if isinstance(item.context_expr, ast.Call):
+    #             func = item.context_expr.func
+    #             if isinstance(func, ast.Attribute) and func.attr == 'device':
+    #                 for arg in item.context_expr.args:
+    #                     if isinstance(arg, ast.Constant) and 'GPU' in str(arg.value).upper():
+    #                         self.explicit_gpu_calls.append('tf.device')
+    #                         self.lines_considered.append(node.lineno)
+    #     self.generic_visit(node)
+
+
 def is_pytorch_tensor_op(full_name):
     return full_name.startswith("torch.") and any(full_name.endswith(f".{op}") for op in PYTORCH_TENSOR_OPS)
+
 
 def is_tensorflow_tensor_op(full_name):
     return full_name.startswith("tf.") and any(full_name.endswith(f".{op}") for op in TENSORFLOW_TENSOR_OPS)
 
+
+def explicit_gpu_calls_check(node):
+    explicit_gpu_calls = []
+    explicit_gpu_calls_lines = []
+    if (isinstance(node.func, ast.Attribute) and node.func.attr == 'device') or \
+            (isinstance(node.func, ast.Name) and node.func.id == 'device'):
+        # Check args
+        if node.args:
+            first_arg = node.args[0]
+
+            # Case 1: The arg is a constant string "cuda" => GPU only
+            if isinstance(first_arg, ast.Constant) and first_arg.value == "cuda":
+                explicit_gpu_calls_lines.append(node.lineno)
+                explicit_gpu_calls.append(get_full_attr_name(node.func))
+
+            # # Case 2: Check for something like: torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            # elif isinstance(first_arg, ast.IfExp):
+            #     # Check if the test calls torch.cuda.is_available()
+            #     test = first_arg.test
+            #
+            #     # If test is a call to torch.cuda.is_available()
+            #     if not is_cuda_is_available(test):
+            #         # We don't mark it as an explicit gpu call
+            #
+            #     # Otherwise, conservative fallback:
+            #     else:
+            #         self.gpu_only_lines.append(node.lineno)
+            # else:
+            #     # For other cases, you can add more rules or ignore
+            #     pass
+
+    return explicit_gpu_calls, explicit_gpu_calls_lines
+
+
+# A helper function to check if this is a call to torch.cuda.is_available()
+def is_cuda_is_available(call_node):
+    # call_node should be an ast.Call with func torch.cuda.is_available
+    if not isinstance(call_node, ast.Call):
+        return False
+    func = call_node.func
+    # Check func is Attribute 'is_available' of Attribute 'cuda' of Name 'torch'
+    if isinstance(func, ast.Attribute) and func.attr == 'is_available':
+        value = func.value
+        if isinstance(value, ast.Attribute) and value.attr == 'cuda':
+            if isinstance(value.value, ast.Name) and value.value.id == 'torch':
+                return True
+    return False

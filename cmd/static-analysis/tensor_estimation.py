@@ -14,11 +14,13 @@ def estimate_pytorch_tensor_size(call_node):
 
     for arg in call_node.args:
         # Case 1: torch.tensor([...]) — count elements in nested list
+        # Example: torch.tensor([1, 2, 3])
         if func_name.endswith("tensor") and isinstance(arg, ast.List):
             size = count_elements(arg)
             return size if size > 0 else None
 
         # Case 2: Shape as Tuple or List
+        # Example: torch.zeros((2, 3))
         if isinstance(arg, (ast.Tuple, ast.List)):
             dims = []
             for elt in arg.elts:
@@ -32,6 +34,7 @@ def estimate_pytorch_tensor_size(call_node):
                     size *= dim
 
         # Case 3: Positional int args
+        # Example: torch.zeros(2, 3)
         elif isinstance(arg, ast.Constant) and isinstance(arg.value, int):
             found_shape = True
             size *= arg.value

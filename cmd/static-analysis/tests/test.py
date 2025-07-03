@@ -21,9 +21,15 @@ class TestCPUClassification:
         test_file = os.path.join(CPU_TESTDATA_DIR, "small-pytorch.py")
         result = analyze_file(test_file)
         assert result["execution_mode"] == "cpu_preferred"
-        assert result["details"]["uses_cuda"] is False
+        assert result["details"]["explicit_gpu_calls"] is False
         assert len(result["details"]["small_calls"]) == 2
         assert len(result["details"]["big_calls"]) == 0
+
+    def test_with_device_request(self):
+        test_file = os.path.join(CPU_TESTDATA_DIR, "cpu-with-device-request.py")
+        result = analyze_file(test_file)
+        assert result["execution_mode"] == "cpu_preferred"
+        assert result["details"]["explicit_gpu_calls"] is False
 
 
 class TestGPUClassification:
@@ -31,13 +37,13 @@ class TestGPUClassification:
         test_file = os.path.join(GPU_TESTDATA_DIR, "gpu.py")
         result = analyze_file(test_file)
         assert result["execution_mode"] == "gpu"
-        assert result["details"]["uses_cuda"] is True
+        assert result["details"]["explicit_gpu_calls"] is True
 
     def test_with_big_pytorch_tensor(self):
         test_file = os.path.join(GPU_TESTDATA_DIR, "big-pytorch.py")
         result = analyze_file(test_file)
         assert result["execution_mode"] == "gpu_preferred"
-        assert result["details"]["uses_cuda"] is False
+        assert result["details"]["explicit_gpu_calls"] is False
         assert len(result["details"]["small_calls"]) == 2
         assert len(result["details"]["big_calls"]) == 1
 
