@@ -606,7 +606,7 @@ func updateService(f fn.Function, previousService *v1.Service, newEnv []corev1.E
 		cp := &service.Spec.Template.Spec.Containers[0]
 		setHealthEndpoints(f, cp)
 
-		err := setServiceOptions(&service.Spec.Template, f.Deploy.Options) // here the recources are set
+		err := setServiceOptions(&service.Spec.Template, f.Deploy.Options)
 		if err != nil {
 			return service, err
 		}

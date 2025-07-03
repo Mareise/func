@@ -42,7 +42,6 @@ func (d *Describer) Describe(ctx context.Context, name, namespace string) (descr
 		return
 	}
 
-	// i could get the service like that
 	service, err := servingClient.GetService(ctx, name)
 	if err != nil {
 		return

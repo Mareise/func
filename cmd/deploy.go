@@ -195,8 +195,6 @@ EXAMPLES
 		"Service account to be used in the deployed function ($FUNC_SERVICE_ACCOUNT)")
 	cmd.Flags().String("execution-mode", "auto",
 		"Execution mode to be used in the deployed function. [auto|gpu|cpu|cpu_preferred|gpu_preferred].")
-	cmd.Flags().Bool("change-execution-mode", false,
-		"Redeploy option when reevaluation change. Only internal usage.")
 
 	// Static Flags:
 	// Options which have static defaults only (not globally configurable nor
@@ -377,7 +375,6 @@ func runDeploy(cmd *cobra.Command, newClient ClientFactory) (err error) {
 				f.Deploy.Image = f.Build.Image
 			}
 		}
-		redeploy, _ := cmd.Flags().GetBool("change-execution-mode")
 		if f, err = client.Deploy(cmd.Context(), f, fn.WithDeploySkipBuildCheck(cfg.Build == "false")); err != nil {
 			return
 		}
