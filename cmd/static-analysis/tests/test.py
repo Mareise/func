@@ -31,6 +31,13 @@ class TestCPUClassification:
         assert result["execution_mode"] == "cpu_preferred"
         assert result["details"]["explicit_gpu_calls"] is False
 
+    def test_with_real_case(self):
+        test_file = os.path.join(CPU_TESTDATA_DIR, "real-case.py")
+        result = analyze_file(test_file)
+        print(result)
+        assert result["execution_mode"] == "cpu_preferred"
+        assert result["details"]["explicit_gpu_calls"] is False
+
 
 class TestGPUClassification:
     def test_with_cuda_usage(self):
