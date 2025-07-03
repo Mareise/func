@@ -882,13 +882,13 @@ func getInferredExecutionMode() ExecutionMode {
 			return GPU
 		case GPUPreferred:
 			final = GPUPreferred
-		case CPU:
-			if final != GPUPreferred {
-				final = CPU
-			}
 		case CPUPreferred:
 			if final != GPUPreferred {
 				final = CPUPreferred
+			}
+		case CPU:
+			if final != GPUPreferred && final != CPUPreferred {
+				final = CPU
 			}
 		}
 	}
