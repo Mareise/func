@@ -564,12 +564,11 @@ const (
 type AnalysisResult struct {
 	ExecutionMode ExecutionMode `json:"execution_mode"`
 	Reason        string        `json:"reason"`
-	Confidence    float64       `json:"confidence"`
 	Details       struct {
-		Imports   []string `json:"imports"`
-		UsesCUDA  bool     `json:"uses_cuda"`
-		CUDACalls []string `json:"cuda_calls"`
-		Lines     []int    `json:"lines_considered"`
+		Imports             []string `json:"imports"`
+		HasExplicitGPUCalls bool     `json:"has_explicit_gpu_calls"`
+		ExplicitGPUCalls    []string `json:"explicit_gpu_calls"`
+		Lines               []int    `json:"lines_considered"`
 	} `json:"details"`
 }
 
@@ -876,10 +875,28 @@ func getInferredExecutionMode() ExecutionMode {
 
 	printAnalysisResult(result)
 
+	var final ExecutionMode
 	for _, analysis := range result {
-		return analysis.ExecutionMode
+		switch analysis.ExecutionMode {
+		case GPU:
+			return GPU
+		case GPUPreferred:
+			final = GPUPreferred
+		case CPU:
+			if final != GPUPreferred {
+				final = CPU
+			}
+		case CPUPreferred:
+			if final != GPUPreferred {
+				final = CPUPreferred
+			}
+		}
 	}
-	return ""
+	if final == "" {
+		final = CPUPreferred
+	}
+	fmt.Printf("Set execution mode to: %v\n", final)
+	return final
 }
 
 func printAnalysisResult(result map[string]AnalysisResult) {
@@ -892,12 +909,11 @@ func printAnalysisResult(result map[string]AnalysisResult) {
 		fmt.Printf("\nAnalysis Result for %s:\n", file)
 		fmt.Printf("  Execution Mode: %s\n", analysis.ExecutionMode)
 		fmt.Printf("  Reason: %s\n", analysis.Reason)
-		fmt.Printf("  Confidence: %.2f%%\n", analysis.Confidence*100)
 		fmt.Printf("  Details:\n")
 		fmt.Printf("    Imports: %v\n", analysis.Details.Imports)
-		fmt.Printf("    Uses CUDA: %v\n", analysis.Details.UsesCUDA)
-		if analysis.Details.UsesCUDA {
-			fmt.Printf("    CUDA Calls: %v\n", analysis.Details.CUDACalls)
+		fmt.Printf("    Uses CUDA: %v\n", analysis.Details.HasExplicitGPUCalls)
+		if analysis.Details.HasExplicitGPUCalls {
+			fmt.Printf("    CUDA Calls: %v\n", analysis.Details.ExplicitGPUCalls)
 		}
 		fmt.Printf("    Lines Considered: %v\n", analysis.Details.Lines)
 	}

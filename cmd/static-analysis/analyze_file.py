@@ -34,7 +34,7 @@ def analyze_file(filename):
 
         result["details"]["explicit_gpu_calls"] = list(set(explicit_gpu_calls))
         result["details"]["imports"] = list(imports_found)
-        result["details"]["explicit_gpu_calls"] = bool(explicit_gpu_calls)
+        result["details"]["has_explicit_gpu_calls"] = bool(explicit_gpu_calls)
         result["details"]["lines_considered"] = lines_considered
         result["details"]["small_calls"] = small_calls
         result["details"]["big_calls"] = big_calls
