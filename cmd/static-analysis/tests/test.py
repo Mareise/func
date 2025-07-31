@@ -69,6 +69,15 @@ class TestGPUClassification:
         assert len(result["details"]["small_calls"]) == 2
         assert len(result["details"]["big_calls"]) == 1
 
+    def test_with_from_import(self):
+        test_file = os.path.join(GPU_TESTDATA_DIR, "gpu_2.py")
+        result = analyze_file(test_file)
+        print(result)
+        assert result["execution_mode"] == "cpu_preferred"
+        assert result["details"]["has_explicit_gpu_calls"] is False
+        assert len(result["details"]["small_calls"]) == 0
+        assert len(result["details"]["big_calls"]) == 0
+
 class TestTensorFlowTensorSizeEstimation:
     @pytest.mark.parametrize("code,expected", [
         ("torch.zeros(3, 4)", 12),

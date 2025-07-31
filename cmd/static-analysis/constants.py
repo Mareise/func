@@ -5,7 +5,7 @@ class ExecutionModes:
     CPU_PREFERRED = 'cpu_preferred'
 
 
-GPU_IMPORTS = {'torch', 'tensorflow'}
+GPU_IMPORTS = {'torch', 'tensorflow', "transformers"}
 PYTORCH_TENSOR_OPS = {'tensor', 'randn', 'zeros', 'ones', 'empty'}
 TENSORFLOW_TENSOR_OPS = {'constant', 'zeros', 'ones', 'fill', 'random.uniform', 'random.normal'}
 
