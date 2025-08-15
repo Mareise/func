@@ -42,8 +42,9 @@ go run ../../main.go deploy --registry index.docker.io/maxireis/ -b=s2i -v --exe
 ```
 
 ## Deployment
+On linux
 ```
-make linux-amd64
+make
 chmod +x func
 mv func /usr/local/bin
 ```
