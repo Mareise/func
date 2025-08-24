@@ -193,8 +193,8 @@ EXAMPLES
 		"When triggering a remote deployment, set a custom volume size to allocate for the build operation ($FUNC_PVC_SIZE)")
 	cmd.Flags().String("service-account", f.Deploy.ServiceAccountName,
 		"Service account to be used in the deployed function ($FUNC_SERVICE_ACCOUNT)")
-	cmd.Flags().String("execution-mode", "auto",
-		"Execution mode to be used in the deployed function. [auto|gpu|cpu|cpu_preferred|gpu_preferred].")
+	cmd.Flags().String("deployment-mode", "auto",
+		"Deployment mode to be used in the deployed function. [auto|gpu|cpu].")
 
 	// Static Flags:
 	// Options which have static defaults only (not globally configurable nor
@@ -285,9 +285,9 @@ func runDeploy(cmd *cobra.Command, newClient ClientFactory) (err error) {
 	// Informative non-error messages regarding the final deployment request
 	printDeployMessages(cmd.OutOrStdout(), f)
 
-	executionMode, _ := cmd.Flags().GetString("execution-mode")
-	print("Execution Mode: ", executionMode)
-	switch executionMode {
+	deploymentMode, _ := cmd.Flags().GetString("deployment-mode")
+	print("Deployment Mode: ", deploymentMode)
+	switch deploymentMode {
 	case "auto":
 		inferredExecutionMode := getInferredExecutionMode()
 		f.Deploy.Annotations["executionMode"] = string(inferredExecutionMode)
@@ -297,12 +297,6 @@ func runDeploy(cmd *cobra.Command, newClient ClientFactory) (err error) {
 		resetGpuResourceLimits(&f)
 	case "gpu":
 		f.Deploy.Annotations["executionMode"] = "gpu"
-		setGpuResourceLimits(&f)
-	case "cpu_preferred":
-		f.Deploy.Annotations["executionMode"] = "cpu_preferred"
-		resetGpuResourceLimits(&f)
-	case "gpu_preferred":
-		f.Deploy.Annotations["executionMode"] = "gpu_preferred"
 		setGpuResourceLimits(&f)
 	default:
 		f.Deploy.Annotations["executionMode"] = "cpu_preferred"
