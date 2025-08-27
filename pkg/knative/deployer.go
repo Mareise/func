@@ -171,7 +171,6 @@ func (d *Deployer) Deploy(ctx context.Context, f fn.Function) (fn.DeploymentResu
 		out = os.Stderr
 	}
 	since := time.Now()
-	// Starts collecting logs from the function's pod and buffers them in case of errors.
 	go func() {
 		_ = GetKServiceLogs(ctx, namespace, f.Name, f.Deploy.Image, &since, out)
 	}()
@@ -298,9 +297,6 @@ func (d *Deployer) Deploy(ctx context.Context, f fn.Function) (fn.DeploymentResu
 			return fn.DeploymentResult{}, err
 		}
 
-		// could be used
-		// todo have to call this like that when maybe certain flag is set
-		// maybe in a seperate command?
 		_, err = client.UpdateServiceWithRetry(ctx, f.Name, updateService(f, previousService, newEnv, newEnvFrom, newVolumes, newVolumeMounts, d.decorator, daprInstalled), 3)
 		if err != nil {
 			err = fmt.Errorf("knative deployer failed to update the Knative Service: %v", err)

@@ -106,8 +106,6 @@ type Function struct {
 	Deploy DeploySpec `yaml:"deploy,omitempty"`
 
 	Local Local `yaml:"-"`
-
-	Hallo string `yaml:"hallo"`
 }
 
 // KnativeSubscription
@@ -178,7 +176,6 @@ type RunSpec struct {
 }
 
 // DeploySpec
-// here i need to set it i think
 type DeploySpec struct {
 	// Namespace into which the function was deployed on supported platforms.
 	Namespace string `yaml:"namespace,omitempty"`
@@ -187,7 +184,6 @@ type DeploySpec struct {
 	Image string `yaml:"image,omitempty"`
 
 	// Map containing user-supplied annotations
-	// todo i think here i could start by setting the flag
 	// Example: { "division": "finance" }
 	Annotations map[string]string `yaml:"annotations,omitempty"`
 
@@ -262,7 +258,6 @@ func NewFunction(root string) (f Function, err error) {
 		}
 	}
 	f.Root = root // path is not persisted, as this is the purview of the FS
-	//fmt.Printf("NewFunction: %+v\n", f)
 
 	// Path must exist and be a directory
 	fd, err := os.Stat(root)

@@ -843,7 +843,7 @@ func isDigested(v string) (validDigest bool, err error) {
 func getInferredExecutionMode() ExecutionMode {
 	tmpDir := os.TempDir()
 	tmpPath := filepath.Join(tmpDir, "classifier")
-	// Add .exe extension for windows todo have to check
+
 	if runtime.GOOS == "windows" {
 		tmpPath += ".exe"
 	}

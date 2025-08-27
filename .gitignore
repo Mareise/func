@@ -35,7 +35,6 @@ __pycache__
 .DS_Store
 
 # Static code analysis
-# todo has to be remove for a procuctive version
 /cmd/static-analysis/dist
 /cmd/static-analysis/build
 /testfunctions
